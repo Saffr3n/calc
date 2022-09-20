@@ -3,10 +3,16 @@ const display = document.querySelector('#disp');
 
 let input = ['0'];
 
-buttons.forEach(btn =>{ // TODO: 1. handle Infinity result; 2. memory button behaviour
+// TODO:
+// 1. memory button behaviour
+// 2. keyboard input
+
+buttons.forEach(btn =>{
     btn.addEventListener('click', e => {
         if (e.target.value === 'C')
             input = ['0'];
+
+        if (input.includes('ERROR')) return;
 
         if (e.target.value === 'B') {
             input.pop();
@@ -40,7 +46,7 @@ buttons.forEach(btn =>{ // TODO: 1. handle Infinity result; 2. memory button beh
             input.push(e.target.value);
         }
 
-        if (e.target.value === '=') { // TODO: make behaviour for when = pressed without second operand
+        if (e.target.value === '=' && operatorsAmount > 0) {
             input = [...operate(operatorIndex)];
             operatorIndex = -1;
             operatorsAmount = 0;
@@ -54,6 +60,11 @@ buttons.forEach(btn =>{ // TODO: 1. handle Infinity result; 2. memory button beh
             operatorsAmount = 1;
         }
 
+        if (input.slice(operatorIndex + 1).reduce((n, char) => {
+            if (!Object.is(parseFloat(char), NaN)) n++;
+            return n;
+        }, 0) > 20) input = ['ERROR'];
+
         if (operatorIndex !== input.length - 1)
             display.textContent = input.slice(operatorIndex + 1).join('');
         else display.textContent = input.join('');
@@ -63,26 +74,30 @@ buttons.forEach(btn =>{ // TODO: 1. handle Infinity result; 2. memory button beh
 function operate (operatorIndex) {
     const x = parseFloat(input.slice(0, operatorIndex).join(''));
     const y = parseFloat(input.slice(operatorIndex + 1).join(''));
+
     let result;
 
     switch (input[operatorIndex]) {
         case '+':
-            result = `${x + y}`.split('');
+            result = `${x + (Object.is(y, NaN) ? x : y)}`.split('');
             break;
         case '-':
-            result = `${x - y}`.split('');
+            result = `${x - (Object.is(y, NaN) ? x : y)}`.split('');
             break
         case '*':
-            result = `${x * y}`.split('');
+            result = `${x * (Object.is(y, NaN) ? x : y)}`.split('');
             break
         case '/':
-            result = `${x / y}`.split('');
+            result = `${x / (Object.is(y, NaN) ? x : y)}`.split('');
     }
 
     if (result[0] === '-') {
         result[1] = '-' + result[1];
         result.shift();
     }
+
+    if (result.join('').includes('Infinity') || result.join('').includes('NaN'))
+        result = ['ERROR'];
 
     return result;
 }
